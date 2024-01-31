@@ -16,7 +16,7 @@ class LaptopInfo {
 
     // Parameterized constructor
     LaptopInfo(int customer_id, int order_number, int laptop_type, int engineer, int expert_id): 
-        customer_id(customer_id), order_number(order_number), laptop_type(laptop_type), engineer_id(engineer), expert_id(engineer) {};
+        customer_id(customer_id), order_number(order_number), laptop_type(laptop_type), engineer_id(engineer), expert_id(expert_id) {};
 
      // Provide a string representation of the laptop information (for simplicity)
     std::string toString() const {

@@ -118,6 +118,10 @@ $(CMN_OBJS): $(CMN_SRCS) $(CMN_HDRS)
 # You can type "make clean" in the command line to delete all compiled files
 # which include .o files and the compiled binary.
 
+# Add a target to move files to a different folder
+# move_files:
+# 	mv server client Client.o ClientMain.o Customer.o LaptopInfo.o Order.o Server.o ServerMain.o generated_folder/
+
 clean:
 	rm -rf *.o $(TARGET)
 
