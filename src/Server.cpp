@@ -1,65 +1,82 @@
 #include <iostream>
-#include <string>
 #include <cstring>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
-class Server {
+#define BACKLOG 2000
+
+class Server
+{
 private:
-    int sockfd, newSock;
-    struct sockaddr_in serverAddr, newAddr;
-    socklen_t addrSize;
+    int sockfd, newfd;                // Socket file descriptors
+    struct sockaddr_in my_addr, addr; // Server and client address structures
+    unsigned int addr_size = sizeof(addr);
+    int port; // Port number
 
 public:
-    Server(int serverPort) {
-        sockfd = socket(AF_INET, SOCK_STREAM, 0);
-        if (sockfd < 0) {
-            std::cerr << "Error creating socket" << std::endl;
+    // Constructor: Initializes a server and binds to a specified port.
+    Server(int serverPort) : port(serverPort)
+    {
+        sockfd = socket(AF_INET, SOCK_STREAM, 0); // Create a socket
+        if (sockfd < 0)
+        {
+            perror("ERROR: failed to create socket");
             exit(1);
         }
 
-        serverAddr.sin_family = AF_INET;
-        serverAddr.sin_port = htons(serverPort);
-        serverAddr.sin_addr.s_addr = INADDR_ANY;
-    }
+        memset(&my_addr, '\0', sizeof(my_addr)); // Initialize server address structure
+        my_addr.sin_family = AF_INET;
+        my_addr.sin_port = htons(port);
+        my_addr.sin_addr.s_addr = INADDR_ANY;
 
-    void bindAndListen() {
-        int opt = 1;
-
-        // Set the SO_REUSEADDR option
-        if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt )) < 0) {
-            std::cerr << "Error setting socket option" << std::endl;
+        // Bind the socket to the server's address
+        if ((bind(sockfd, (struct sockaddr *)&my_addr, sizeof(my_addr))) < 0)
+        {
+            perror("ERROR: failed to bind");
             exit(1);
         }
 
-        if (bind(sockfd, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
-            std::cerr << "Error binding" << std::endl;
+        // Listen for incoming connections
+        listen(sockfd, BACKLOG);
+
+        // Accept an incoming connection
+        newfd = accept(sockfd, (struct sockaddr *)&addr, &addr_size);
+        if (newfd < 0)
+        {
+            perror("ERROR: failed to accept");
             exit(1);
         }
+    }
 
-        listen(sockfd, 1);
-        addrSize = sizeof(newAddr);
-        newSock = accept(sockfd, (struct sockaddr*)&newAddr, &addrSize);
-        if (newSock < 0) {
-            std::cerr << "Error accepting connection" << std::endl;
+    // Receive data from the connected client
+    std::string receiveData()
+    {
+        char buffer[1024]; // Adjust buffer size as needed
+        int length = recv(newfd, buffer, sizeof(buffer), 0);
+        if (length < 0)
+        {
+            perror("ERROR from Server: failed to receive");
             exit(1);
         }
-        std::cout << "Client connected" << std::endl;
+        return std::string(buffer, length); // Create a string from received data
     }
 
-    std::string receiveData() {
-        char buffer[1024];
-        recv(newSock, buffer, sizeof(buffer), 0);
-        return std::string(buffer);
+    // Send data to the connected client
+    void sendData(const std::string &data)
+    {
+        int length = send(newfd, data.c_str(), data.size(), 0);
+        if (length < 0)
+        {
+            perror("ERROR: failed to send");
+            exit(1);
+        }
     }
 
-    int getNewSocket() const {
-        return newSock;
-    }
-
-    ~Server() {
-        close(newSock);
+    // Destructor: Close the client and server sockets when the object is destroyed
+    ~Server()
+    {
+        close(newfd);
         close(sockfd);
     }
 };

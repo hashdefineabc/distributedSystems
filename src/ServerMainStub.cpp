@@ -1,6 +1,6 @@
 #include <iostream>
 #include "ServerStub.cpp"  // Include the ServerStub class
-#include "Serialization.h" // Include the serialization functions and Order/LaptopInfo structures
+#include "serialization.h" // Include the serialization functions and Order/LaptopInfo structures
 
 int main(int argc, char* argv[]) {
 
