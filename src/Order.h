@@ -1,3 +1,5 @@
+#ifndef ORDER_H
+#define ORDER_H
 #include <sstream>
 
 // Order structure
@@ -24,3 +26,4 @@ struct Order {
         return Order(customer_id, order_number, laptop_type);
     }
 };
+#endif // ORDER_H

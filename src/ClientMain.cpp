@@ -1,7 +1,8 @@
 #include <iostream>
 #include <thread>
-#include "Serialization.h"
-#include "Client.cpp"
+#include "Order.h"
+#include "LaptopInfo.h"
+#include "ClientStub.cpp"
 
 struct LatencyStats {
     long long totalLatency = 0;
@@ -10,20 +11,8 @@ struct LatencyStats {
     int numOrders = 0;
 };
 
-LaptopInfo OrderLaptop(const Order& order, Client &client) {
-    // Marshal order into a byte stream and send it
-    std::string orderData = MarshalOrder(order);
-    client.sendData(orderData);
-
-    // Receive laptop information in byte stream format and unmarshal it
-    std::string laptopData = client.receiveData();
-    LaptopInfo laptopInfo = UnmarshalLaptopInfo(laptopData);
-
-    return laptopInfo;
-}
-
-void customerThread(int customerID, int numOrders, int laptopType, LatencyStats& latencyStats, std::unique_ptr<Client>& clientPtr) {
-    Client& client = *clientPtr;
+void customerThread(int customerID, int numOrders, int laptopType, LatencyStats& latencyStats, ClientStub clientStub) {
+    
     for (int orderNumber = 1; orderNumber <= numOrders; ++orderNumber) {
 
         auto start = std::chrono::high_resolution_clock::now();
@@ -34,8 +23,18 @@ void customerThread(int customerID, int numOrders, int laptopType, LatencyStats&
         order.order_number = orderNumber;
         order.laptop_type = laptopType;
 
-        // Send the order to the server and receive laptop information
-        LaptopInfo laptopInfo = OrderLaptop(order, client);
+        LaptopInfo laptopInfo;
+
+        try {
+            // Send the order to the server and receive laptop information
+            laptopInfo = clientStub.OrderLaptop(order);
+        }
+        catch (std::exception e) {
+            std::cerr << "CustomerId " << customerID << " order number " << orderNumber << " failed "  << std::endl;
+            break;
+        }
+
+        
 
         // Handle the received laptop information
         //std::cout << "Customer " << laptopInfo.customer_id << " OrderNumber " << laptopInfo.order_number << " Info:" << std::endl;
@@ -48,6 +47,8 @@ void customerThread(int customerID, int numOrders, int laptopType, LatencyStats&
         auto end = std::chrono::high_resolution_clock::now();
         auto latency = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
 
+        std::cout << "Customer " << customerID << " received Laptop - Type: " << laptopInfo.laptop_type << " OrderNumber: " << laptopInfo.order_number << " EngineerId: " << laptopInfo.engineer_id << " ExpertId: " << laptopInfo.expert_id << std::endl;
+        
         latencyStats.totalLatency += latency;
         latencyStats.minLatency = std::min(latencyStats.minLatency, latency);
         latencyStats.maxLatency = std::max(latencyStats.maxLatency, latency);
@@ -69,14 +70,12 @@ int main(int argc, char* argv[]) {
     int numOrdersPerCustomer = atoi(argv[4]);
     int laptopType = atoi(argv[5]);
 
-    std::unique_ptr<Client> clientPtr(new Client(serverIP, serverPort));
-
-
     LatencyStats latencyStats;
     std::vector<std::thread> customerThreads;
 
     for (int i = 1; i <= numCustomers; ++i) {
-        customerThreads.emplace_back(customerThread, i, numOrdersPerCustomer, laptopType, std::ref(latencyStats), std::ref(clientPtr));
+        ClientStub clientStub(serverIP, serverPort);
+        customerThreads.emplace_back(customerThread, i, numOrdersPerCustomer, laptopType, std::ref(latencyStats), std::move(clientStub));
     }
 
     // Join all customer threads
@@ -89,12 +88,13 @@ int main(int argc, char* argv[]) {
     long long minLatency = latencyStats.minLatency;
     long long maxLatency = latencyStats.maxLatency;
 
-    std::cout << "Average latency: " << avgLatency << " microseconds" << std::endl;
+    std::cout << "\nTotal Number of Orders: " << latencyStats.numOrders << std::endl;
+    std::cout << "\nAverage latency: " << avgLatency << " microseconds" << std::endl;
     std::cout << "Minimum Latency: " << minLatency << " microseconds" << std::endl;
     std::cout << "Maximum Latency: " << maxLatency << " microseconds" << std::endl;
     double throughput = static_cast<double>(latencyStats.numOrders) / (latencyStats.totalLatency/1000);
 
     std::cout << "Throughput: " << throughput << " orders/second" << std::endl;
 
-    return 0;
+    return 1;
 }

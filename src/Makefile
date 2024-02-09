@@ -6,11 +6,11 @@ LFLAGS := -pthread
 
 all: client server
 
-client: ClientMain.cpp serialization.cpp
-	$(CXX) -o client ClientMain.cpp serialization.cpp $(CFLAGS) $(LFLAGS)
+client: ClientMain.cpp Socket.cpp
+	$(CXX) -o client ClientMain.cpp Socket.cpp $(CFLAGS) $(LFLAGS)
 
-server: ServerMain.cpp serialization.cpp
-	$(CXX) -o server ServerMain.cpp serialization.cpp $(CFLAGS) $(LFLAGS)
+server: ServerMain.cpp Socket.cpp
+	$(CXX) -o server ServerMain.cpp Socket.cpp $(CFLAGS) $(LFLAGS)
 
 .PHONY: clean
 

@@ -1,4 +1,7 @@
 // Laptop information structure
+#ifndef LAPTOPINFO_H
+#define LAPTOPINFO_H
+
 struct LaptopInfo {
     int customer_id; // from order
     int order_number; // from order
@@ -25,3 +28,5 @@ struct LaptopInfo {
         return LaptopInfo(customer_id, order_number, laptop_type, engineer_id, expert_id);
     }
 };
+
+#endif // LAPTOPINFO_H
