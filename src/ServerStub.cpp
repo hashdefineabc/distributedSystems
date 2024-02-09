@@ -9,29 +9,32 @@ private:
 public:
     ServerStub(Socket &&socket) : socket(std::move(socket)) {}
 
-    Order ReceiveOrder() {
-        Order order;
+    bool ReceiveOrder(Order& order) {
         try {
             // Receive the order in byte stream format
             std::string orderDataReceived = socket.receiveData();
-            if(!orderDataReceived.empty()) {
-                order = Order::UnmarshalOrder(orderDataReceived);
+            if(orderDataReceived.empty()) {
+                return false;
             }
-            return order;
+
+            order = Order::UnmarshalOrder(orderDataReceived);
+            return true;
+
         } catch (const SocketException &e) {
             std::cerr << "Error receiving order: " << e.what() << std::endl;
-            return order;
+            return false;
         }
     }
 
-    void ShipLaptop(const LaptopInfo& laptopInfo) {
+    bool ShipLaptop(const LaptopInfo& laptopInfo) {
         try {
             // Marshal laptop information into a byte stream and send it
             std::string laptopData = laptopInfo.MarshalLaptopInfo();
             socket.sendData(laptopData);
+            return true;
         } catch (const SocketException &e) {
             std::cerr << "Error shipping laptop: " << e.what() << std::endl;
-            return;
+            return false;
         }
     }
 };

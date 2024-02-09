@@ -10,8 +10,8 @@ public:
     ClientStub(const std::string& serverIP, int serverPort)
         : socket(Socket::connect(serverIP, serverPort)) {}
 
-    LaptopInfo OrderLaptop(const Order& order) {
-        LaptopInfo laptopInfo;
+    bool OrderLaptop(const Order& order, LaptopInfo& laptopInfo) {
+       // LaptopInfo laptopInfo;
 
         try {
             // Send order to server
@@ -23,8 +23,8 @@ public:
             std::string laptopInfoReceived = socket.receiveData();
 
             if(laptopInfoReceived.empty()) {
-                std::cerr<<"Error receiving laptop information from server, customer order failed "<<std::endl;
-                return laptopInfo;
+                //std::cerr<<"Error receiving laptop information from server, customer order failed "<<std::endl;
+                return false;
             }
 
             //std::cout << "laptop info received: " << laptopInfoReceived << std::endl;
@@ -32,10 +32,10 @@ public:
             // Unmarshal received laptop information
             laptopInfo = LaptopInfo::UnmarshalLaptopInfo(laptopInfoReceived);
 
-            return laptopInfo;
+            return true;
         } catch (const SocketException& e) {
             std::cerr << "Error ordering laptop: " << e.what() << std::endl;
-            return laptopInfo;
+            return false;
         }
     }
 

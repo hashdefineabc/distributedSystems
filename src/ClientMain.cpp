@@ -12,29 +12,20 @@ struct LatencyStats {
 };
 
 void customerThread(int customerID, int numOrders, int laptopType, LatencyStats& latencyStats, ClientStub clientStub) {
-    
+    Order order;
+    LaptopInfo laptopInfo;
+
     for (int orderNumber = 1; orderNumber <= numOrders; ++orderNumber) {
 
         auto start = std::chrono::high_resolution_clock::now();
 
         // Create an Order object and populate its fields
-        Order order;
         order.customer_id = customerID;
         order.order_number = orderNumber;
         order.laptop_type = laptopType;
-
-        LaptopInfo laptopInfo;
-
-        try {
-            // Send the order to the server and receive laptop information
-            laptopInfo = clientStub.OrderLaptop(order);
-        }
-        catch (std::exception e) {
-            std::cerr << "CustomerId " << customerID << " order number " << orderNumber << " failed "  << std::endl;
-            break;
-        }
-
         
+        // Send the order to the server and receive laptop information
+        bool orderLaptopSuccessful = clientStub.OrderLaptop(order, laptopInfo);      
 
         // Handle the received laptop information
         //std::cout << "Customer " << laptopInfo.customer_id << " OrderNumber " << laptopInfo.order_number << " Info:" << std::endl;
@@ -47,12 +38,21 @@ void customerThread(int customerID, int numOrders, int laptopType, LatencyStats&
         auto end = std::chrono::high_resolution_clock::now();
         auto latency = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
 
-        std::cout << "Customer " << customerID << " received Laptop - Type: " << laptopInfo.laptop_type << " OrderNumber: " << laptopInfo.order_number << " EngineerId: " << laptopInfo.engineer_id << " ExpertId: " << laptopInfo.expert_id << " LapNum " << latencyStats.numOrders+1 << std::endl;
         
         latencyStats.totalLatency += latency;
         latencyStats.minLatency = std::min(latencyStats.minLatency, latency);
         latencyStats.maxLatency = std::max(latencyStats.maxLatency, latency);
         latencyStats.numOrders++;
+
+
+        if(orderLaptopSuccessful) {
+            std::cout << "Customer " << customerID << " received Laptop - Type: " << laptopInfo.laptop_type << " OrderNumber: " << laptopInfo.order_number << " EngineerId: " << laptopInfo.engineer_id << " ExpertId: " << laptopInfo.expert_id << " LapNum " << latencyStats.numOrders+1 << std::endl;
+        }
+        else {
+            std::cerr << "CustomerId " << customerID << " order number " << orderNumber << " failed "  << std::endl;
+            break;
+        }  
+        
 
     }
 }
