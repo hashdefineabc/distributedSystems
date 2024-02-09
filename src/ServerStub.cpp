@@ -10,15 +10,17 @@ public:
     ServerStub(Socket &&socket) : socket(std::move(socket)) {}
 
     Order ReceiveOrder() {
-
+        Order order;
         try {
             // Receive the order in byte stream format
             std::string orderDataReceived = socket.receiveData();
-            Order order = Order::UnmarshalOrder(orderDataReceived);
+            if(!orderDataReceived.empty()) {
+                order = Order::UnmarshalOrder(orderDataReceived);
+            }
             return order;
         } catch (const SocketException &e) {
             std::cerr << "Error receiving order: " << e.what() << std::endl;
-            throw;
+            return order;
         }
     }
 
@@ -29,7 +31,7 @@ public:
             socket.sendData(laptopData);
         } catch (const SocketException &e) {
             std::cerr << "Error shipping laptop: " << e.what() << std::endl;
-            throw;
+            return;
         }
     }
 };

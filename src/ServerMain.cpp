@@ -49,21 +49,30 @@ void Expert(int expertId, TaskMtxQueue<Task> &queue) {
 
 void engineer(int engineerId, int expertId, TaskMtxQueue<Task> &queue, ServerStub server) {
     Order order;
-    while(true) {
-        order = server.ReceiveOrder();
-        if(order.MarshalOrder().empty()) {
+    bool flag = true;
+    while(flag) {
+        try{
+            order = server.ReceiveOrder();
+            if(order.MarshalOrder().empty()) {
+                flag = false;
+                break;
+            }
+            LaptopInfo laptopInfo(order.customer_id, order.order_number, order.laptop_type, engineerId, expertId);
+            if(order.laptop_type == 1) {
+                std::promise<bool> promise;
+                queue.push(Task{&laptopInfo, &promise});
+                promise.get_future().get();
+                //server.ShipLaptop(laptopInfo);
+            }
+            server.ShipLaptop(laptopInfo);
+            if(laptopInfo.MarshalLaptopInfo().empty()){
+                break;
+            }
+        }
+        catch(const SocketException& e) {
+            std::cerr << "SocketException in engineer function: " << e.what() << std::endl;
             break;
         }
-        LaptopInfo laptopInfo(order.customer_id, order.order_number, order.laptop_type, engineerId, expertId);
-        if(order.laptop_type == 1) {
-            std::promise<bool> promise;
-            queue.push(Task{&laptopInfo, &promise});
-            promise.get_future().get();
-            //server.ShipLaptop(laptopInfo);
-        }
-        server.ShipLaptop(laptopInfo);
-        if(laptopInfo.MarshalLaptopInfo().empty())
-            break;
     }
     std::cout<<"EngineerId " << engineerId << " completed" << std::endl;
 }
@@ -93,6 +102,7 @@ int main(int argc, char* argv[]) {
 
     while (true)
     {
+        try {
         Socket clientSocket = serverSocket.accept();
         std::cout << "Connection accepted from " << clientSocket.getFd() << std::endl;
 
@@ -100,6 +110,11 @@ int main(int argc, char* argv[]) {
         std::thread serverThread(engineer, engineerId, -1, std::ref(taskQueue), std::move(serverStub));
         engineerId += 1;
         serverThread.detach();
+        }
+        catch(const SocketException& e) {
+            std::cerr << "SocketException in ServerMain: " << e.what() << std::endl;
+            break;
+        }
 
     }
 

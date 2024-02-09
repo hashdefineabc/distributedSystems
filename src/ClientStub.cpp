@@ -11,6 +11,8 @@ public:
         : socket(Socket::connect(serverIP, serverPort)) {}
 
     LaptopInfo OrderLaptop(const Order& order) {
+        LaptopInfo laptopInfo;
+
         try {
             // Send order to server
             socket.sendData(order.MarshalOrder());
@@ -22,18 +24,18 @@ public:
 
             if(laptopInfoReceived.empty()) {
                 std::cerr<<"Error receiving laptop information from server, customer order failed "<<std::endl;
-                throw;
+                return laptopInfo;
             }
 
             //std::cout << "laptop info received: " << laptopInfoReceived << std::endl;
 
             // Unmarshal received laptop information
-            LaptopInfo laptopInfo = LaptopInfo::UnmarshalLaptopInfo(laptopInfoReceived);
+            laptopInfo = LaptopInfo::UnmarshalLaptopInfo(laptopInfoReceived);
 
             return laptopInfo;
         } catch (const SocketException& e) {
             std::cerr << "Error ordering laptop: " << e.what() << std::endl;
-            throw;
+            return laptopInfo;
         }
     }
 

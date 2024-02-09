@@ -47,7 +47,7 @@ void customerThread(int customerID, int numOrders, int laptopType, LatencyStats&
         auto end = std::chrono::high_resolution_clock::now();
         auto latency = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
 
-        std::cout << "Customer " << customerID << " received Laptop - Type: " << laptopInfo.laptop_type << " OrderNumber: " << laptopInfo.order_number << " EngineerId: " << laptopInfo.engineer_id << " ExpertId: " << laptopInfo.expert_id << std::endl;
+        std::cout << "Customer " << customerID << " received Laptop - Type: " << laptopInfo.laptop_type << " OrderNumber: " << laptopInfo.order_number << " EngineerId: " << laptopInfo.engineer_id << " ExpertId: " << laptopInfo.expert_id << " LapNum " << latencyStats.numOrders+1 << std::endl;
         
         latencyStats.totalLatency += latency;
         latencyStats.minLatency = std::min(latencyStats.minLatency, latency);
